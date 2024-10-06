@@ -15,33 +15,33 @@ struct pPrograma {
     struct pPrograma *ant, *prox;
 }; typedef struct pPrograma Prog;
 
-struct pilhaLilha {
-    Lin *info;
-    struct pilhaLilha *prox;
-}; typedef struct pilhaLilha PilhaL;
+struct pilhaProg {
+    Prog *info;
+    struct pilhaProg *prox;
+}; typedef struct pilhaProg PilhaP;
 
 // Funções - Pilha
-void initPL(PilhaL **PL) {
-    *PL = NULL;
+void initPP(PilhaP **PP) {
+    *PP = NULL;
 }
 
-void pushL(PilhaL **PL, Lin *x) {
-    PilhaL *nova = (PilhaL*) malloc(sizeof(PilhaL));
+void pushP(PilhaP **PP, Prog *x) {
+    PilhaP *nova = (PilhaP*) malloc(sizeof(PilhaP));
     nova->info = x;
-    nova->prox = *PL;
-    *PL = nova;
+    nova->prox = *PP;
+    *PP = nova;
 }
 
-char isEmptyPL(PilhaL *PL) {
-    return PL == NULL;
+char isEmptyPP(PilhaP *PP) {
+    return PP == NULL;
 }
 
-void popL(PilhaL **PL, Lin **x) {
-    PilhaL *aux;
-    if (!isEmptyPL(*PL)) {
-        aux = *PL;
-        *x = (*PL)->info;
-        *PL = (*PL)->prox;
+void popP(PilhaP **PP, Prog **x) {
+    PilhaP *aux;
+    if (!isEmptyPP(*PP)) {
+        aux = *PP;
+        *x = (*PP)->info;
+        *PP = (*PP)->prox;
         free(aux);
     } else {
         *x = NULL;
@@ -219,19 +219,33 @@ Prog* encontrarFuncao(Prog* programa, char* nomeFuncao) {
     return NULL; 
 }
 
+int ehChamadaDeFuncao(Lin *linha, char nomeFuncao[50]) {
+    while(linha != NULL){
+    	if(strcmp(linha->token, "print") == 0 && strcmp(linha->prox->token, "(") == 1){
+    		strcpy(nomeFuncao, linha->token);
+    		return 1;
+		}
+    	
+    	linha = linha->prox;
+	}
+	
+    return 0;
+}
+
 int main(void) {
-    Prog *p = NULL, *linhaExec;
-    char tecla;
+    Prog *p = NULL, *linhaExec, *funcaoInicio;
+    PilhaP *pilhaExec;
+    char tecla, nomeFuncao[50];
     char caminhoArquivo[50];
+    
+    initPP(&pilhaExec);  // Inicializa a pilha de execução
     
     while (1) {
         if (kbhit()) {
             tecla = getch();
             
             if (tecla == 65) { // F7 - Abrir arquivo
-                //printf("Digite o caminho do arquivo: ");
-                //scanf("%s", caminhoArquivo);
-                strcpy(caminhoArquivo, "C://Trabalho//main.py");
+                strcpy(caminhoArquivo, "C://Users//Daniel dos Santos//Documents//GitHub//Trabalho-ED2---Interpretador-Python//main.py");
                 lerArquivoPython(&p, caminhoArquivo);
                 linhaExec = encontrarPrimeiraLinhaExecutavel(p);
                 imprimirPrograma(p, linhaExec);
@@ -242,6 +256,26 @@ int main(void) {
                     if (kbhit()) {
                         tecla = getch();
                         if (tecla == 13) { // ENTER
+                            if (ehChamadaDeFuncao(linhaExec->linha, nomeFuncao)) {
+                            	printf("oi");
+                                pushP(&pilhaExec, linhaExec);
+                                
+                                linhaExec = encontrarFuncao(p, nomeFuncao);
+                                imprimirPrograma(p, linhaExec);
+
+                                while (linhaExec != NULL && strcmp(linhaExec->linha->token, "fim-def") != 0) {
+                                    if (kbhit()) {
+                                        tecla = getch();
+                                        if (tecla == 13) { // ENTER
+                                            linhaExec = linhaExec->prox;
+                                            imprimirPrograma(p, linhaExec);
+                                        }
+                                    }
+                                }
+                                
+                                popP(&pilhaExec, &linhaExec);
+                            }
+                            
                             linhaExec = linhaExec->prox;
                             imprimirPrograma(p, linhaExec);
                         }
