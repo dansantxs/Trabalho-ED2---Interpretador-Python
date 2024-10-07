@@ -3,6 +3,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <conio2.h>
+#include <windows.h>
 
 // Estruturas
 struct pLinha {
@@ -171,8 +172,17 @@ void adicionarFuncao(Funcoes **funcoes, char *nomeFuncao, Prog *enderecoFuncao) 
     Funcoes *nova = (Funcoes*) malloc(sizeof(Funcoes));
     strcpy(nova->nome, nomeFuncao);
     nova->endereco = enderecoFuncao;
-    nova->prox = *funcoes;
-    *funcoes = nova;
+    nova->prox = NULL;
+
+    if (*funcoes == NULL) {
+        *funcoes = nova;
+    } else {
+        Funcoes *aux = *funcoes;
+        while (aux->prox != NULL) {
+            aux = aux->prox;
+        }
+        aux->prox = nova;
+    }
 }
 
 void lerArquivoPython(Prog** p, char* caminhoArquivo, Funcoes** funcoes) {
@@ -181,7 +191,8 @@ void lerArquivoPython(Prog** p, char* caminhoArquivo, Funcoes** funcoes) {
         printf("Erro ao abrir o arquivo.\n");
         return;
     }
-
+	
+	*funcoes = NULL;
     Prog* programa = NULL;
     Prog* programaAtual = NULL;
 
@@ -195,7 +206,7 @@ void lerArquivoPython(Prog** p, char* caminhoArquivo, Funcoes** funcoes) {
         }
 
         if (nova != NULL && strcmp(nova->token, "def") == 0 && nova->prox != NULL) {
-            adicionarFuncao(funcoes, nova->prox->token, programaAtual);
+            adicionarFuncao(&(*funcoes), nova->prox->token, programaAtual);
         }
     }
 
@@ -246,42 +257,42 @@ Prog* encontrarPrimeiraLinhaExecutavel(Prog* programa) {
     return NULL;
 }
 
-Prog* encontrarFuncao(Prog* programa, char* nomeFuncao) {
-    Prog* progAtual = programa;
-    while (progAtual != NULL) {
-        Lin* linhaAtual = progAtual->linha;
-        if (linhaAtual != NULL && strcmp(linhaAtual->token, "def") == 0) {
-            linhaAtual = linhaAtual->prox; 
-            if (linhaAtual != NULL && strcmp(linhaAtual->token, nomeFuncao) == 0) {
-                return progAtual;
-            }
+Prog* encontrarFuncao(Funcoes *funcoes, char* nomeFuncao) {
+    Funcoes *atual = funcoes;
+    
+    while (atual != NULL) {
+        if (strcmp(atual->nome, nomeFuncao) == 0) {
+            return atual->endereco; 
         }
-        progAtual = progAtual->prox;
+        atual = atual->prox;
     }
-    return NULL; 
+
+    return NULL;
 }
 
-int ehChamadaDeFuncao(Lin *linha, char nomeFuncao[50]) {
-    while(linha != NULL){
-    	if(strcmp(linha->token, "print") == 0 && strcmp(linha->prox->token, "(") == 1){
-    		strcpy(nomeFuncao, linha->token);
-    		return 1;
-		}
-    	
-    	linha = linha->prox;
-	}
-	
-    return 0;
+Prog* ehChamadaDeFuncao(Lin *linha, Funcoes *funcoes) {
+	Prog *enderecoFuncao;
+    while (linha != NULL) {
+        if (linha->prox != NULL && strcmp(linha->prox->token, "(") == 0) {
+	        enderecoFuncao = encontrarFuncao(funcoes, linha->token);
+	        if(enderecoFuncao != NULL)
+				return enderecoFuncao;
+	    }
+	    
+	    linha = linha->prox;
+    }
+    
+    return NULL;
 }
 
 int main(void) {
-    Prog *p = NULL, *linhaExec, *funcaoInicio;
+    Prog *p = NULL, *linhaExec, *funcaoInicio, *enderecoFuncao;
     PilhaP *pilhaExec;
     Funcoes *funcoes = NULL; 
     char tecla;
     char caminhoArquivo[50], nomeFuncao[50];
     
-    initPP(&pilhaExec);  // Inicializa a pilha de execução
+    initPP(&pilhaExec);
     
     while (1) {
         if (kbhit()) {
@@ -299,25 +310,24 @@ int main(void) {
                     if (kbhit()) {
                         tecla = getch();
                         if (tecla == 13) { // ENTER
-                            if (ehChamadaDeFuncao(linhaExec->linha, nomeFuncao)) {
-                            	printf("oi");
-                                pushP(&pilhaExec, linhaExec);
-                                
-                                linhaExec = encontrarFuncao(p, nomeFuncao);
-                                imprimirPrograma(p, linhaExec);
-
-                                while (linhaExec != NULL && strcmp(linhaExec->linha->token, "fim-def") != 0) {
-                                    if (kbhit()) {
-                                        tecla = getch();
-                                        if (tecla == 13) { // ENTER
-                                            linhaExec = linhaExec->prox;
-                                            imprimirPrograma(p, linhaExec);
-                                        }
-                                    }
-                                }
-                                
-                                popP(&pilhaExec, &linhaExec);
-                            }
+                        	enderecoFuncao = ehChamadaDeFuncao(linhaExec->linha, funcoes);
+							if (enderecoFuncao != NULL) {
+							    pushP(&pilhaExec, linhaExec);
+							    linhaExec = enderecoFuncao;
+							    imprimirPrograma(p, linhaExec);
+							
+							    while (linhaExec != NULL && strcmp(linhaExec->linha->token, "fim-def") != 0) {
+							        if (kbhit()) {
+							            tecla = getch();
+							            if (tecla == 13) { // ENTER
+							                linhaExec = linhaExec->prox;
+							                imprimirPrograma(p, linhaExec);
+							            }
+							        }
+							    }
+							
+							    popP(&pilhaExec, &linhaExec); 
+							}
                             
                             linhaExec = linhaExec->prox;
                             imprimirPrograma(p, linhaExec);
