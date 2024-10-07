@@ -139,14 +139,14 @@ void extrairTokens(char* linha, Lin** linhaTokens) {
             token[1] = '\0';
             adicionarToken(linhaTokens, token);
             inicio = fim + 1;
-        /*} else if (linha[fim] == '"') {
+        } else if (linha[fim] == '\"') {
             strncpy(token, &linha[inicio], fim - inicio);
             token[fim - inicio] = '\0';
             adicionarToken(linhaTokens, token);
             token[0] = '"';
             token[1] = '\0';
             adicionarToken(linhaTokens, token);
-            inicio = fim + 1;*/
+            inicio = fim + 1;
         } else if (linha[fim] == '.') {
             strncpy(token, &linha[inicio], fim - inicio);
             token[fim - inicio] = '\0';
@@ -160,6 +160,14 @@ void extrairTokens(char* linha, Lin** linhaTokens) {
             token[fim - inicio] = '\0';
             adicionarToken(linhaTokens, token);
             token[0] = ':';
+            token[1] = '\0';
+            adicionarToken(linhaTokens, token);
+            inicio = fim + 1;
+        } else if (linha[fim] == '!') {
+            strncpy(token, &linha[inicio], fim - inicio);
+            token[fim - inicio] = '\0';
+            adicionarToken(linhaTokens, token);
+            token[0] = '!';
             token[1] = '\0';
             adicionarToken(linhaTokens, token);
             inicio = fim + 1;
@@ -200,13 +208,15 @@ void lerArquivoPython(Prog** p, char* caminhoArquivo, Funcoes** funcoes) {
     while (fgets(linha, sizeof(linha), arquivo)) {
         Lin* nova = NULL;
         extrairTokens(linha, &nova);
-        adicionarLinhaPrograma(&programaAtual, nova);
-        if (programa == NULL) {
-            programa = programaAtual;
-        }
-
-        if (nova != NULL && strcmp(nova->token, "def") == 0 && nova->prox != NULL) {
-            adicionarFuncao(&(*funcoes), nova->prox->token, programaAtual);
+        if(nova != NULL){
+        	adicionarLinhaPrograma(&programaAtual, nova);
+        	if (programa == NULL) {
+	            programa = programaAtual;
+	        }
+	
+	        if (nova != NULL && strcmp(nova->token, "def") == 0 && nova->prox != NULL) {
+	            adicionarFuncao(&(*funcoes), nova->prox->token, programaAtual);
+	        }
         }
     }
 
@@ -237,7 +247,7 @@ void imprimirPrograma(Prog* programa, Prog* linhaExec) {
 
 Prog* encontrarPrimeiraLinhaExecutavel(Prog* programa) {
     Prog* progAtual = programa;
-    int fimDef = 1;
+    int fimDef = -1;
 
     while (progAtual != NULL) {
         Lin* linhaAtual = progAtual->linha;
@@ -257,7 +267,7 @@ Prog* encontrarPrimeiraLinhaExecutavel(Prog* programa) {
     return NULL;
 }
 
-Prog* encontrarFuncao(Funcoes *funcoes, char* nomeFuncao) {
+8Prog* encontrarFuncao(Funcoes *funcoes, char* nomeFuncao) {
     Funcoes *atual = funcoes;
     
     while (atual != NULL) {
@@ -285,7 +295,39 @@ Prog* ehChamadaDeFuncao(Lin *linha, Funcoes *funcoes) {
     return NULL;
 }
 
+void armazenarConteudoPrint(Lin *linha) {
+    FILE *arquivoSaida = fopen("saida.txt", "a");
+    if (!arquivoSaida) {
+        printf("Erro ao abrir arquivo de saída.\n");
+        return;
+    }
+    
+    printf("oi");
+
+    int dentroAspas = 0;
+    while (linha != NULL) {
+    	//printf("%s", linha->token); Sleep(2500);
+        if (strcmp(linha->token, "\"") == 0) {
+            dentroAspas = !dentroAspas; 
+        } else if (dentroAspas == 1) {
+            fprintf(arquivoSaida, "%s ", linha->token);
+        }
+        linha = linha->prox;
+    }
+    fprintf(arquivoSaida, "\n");
+    fclose(arquivoSaida);
+}
+
+void ehPrint(Lin *linha){
+	if (strcmp(linha->token, "print") == 0) 
+		armazenarConteudoPrint(linha->prox);
+}
+
 int main(void) {
+	FILE *arquivoSaida = fopen("saida.txt", "w");
+	remove(arquivoSaida);
+	fclose(arquivoSaida);
+	
     Prog *p = NULL, *linhaExec, *funcaoInicio, *enderecoFuncao;
     PilhaP *pilhaExec;
     Funcoes *funcoes = NULL; 
@@ -299,7 +341,7 @@ int main(void) {
             tecla = getch();
             
             if (tecla == 65) { // F7 - Abrir arquivo
-                strcpy(caminhoArquivo, "C://Users//Daniel dos Santos//Documents//GitHub//Trabalho-ED2---Interpretador-Python//main.py");
+                strcpy(caminhoArquivo, "C://Users//Aluno//Documents//GitHub//Trabalho-ED2---Interpretador-Python//main.py");
                 lerArquivoPython(&p, caminhoArquivo, &funcoes); 
                 linhaExec = encontrarPrimeiraLinhaExecutavel(p);
                 imprimirPrograma(p, linhaExec);
@@ -328,6 +370,8 @@ int main(void) {
 							
 							    popP(&pilhaExec, &linhaExec); 
 							}
+							
+							ehPrint(linhaExec->linha);							
                             
                             linhaExec = linhaExec->prox;
                             imprimirPrograma(p, linhaExec);
