@@ -30,16 +30,16 @@ else:
 lista = [5, 2, 9, 1]
 print("Lista original:", lista)
     
-lista . append(7)
+lista.append(7)
 print("Apos adicionar 7:", lista)
     
-lista . remove(2)
+lista.remove(2)
 print("Apos remover 2:", lista)
     
-lista . sort()
+lista.sort()
 print("Lista ordenada:", lista)
     
-lista . pop()
+lista.pop()
 print("Apos remover o ultimo elemento:", lista)
 
 contagem_while()

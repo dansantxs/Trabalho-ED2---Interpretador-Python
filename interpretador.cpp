@@ -15,6 +15,12 @@ struct pPrograma {
     struct pPrograma *ant, *prox;
 }; typedef struct pPrograma Prog;
 
+struct pFuncoes {
+    char nome[50];
+    Prog *endereco;
+    struct pFuncoes *prox;
+}; typedef struct pFuncoes Funcoes;
+
 struct pilhaProg {
     Prog *info;
     struct pilhaProg *prox;
@@ -132,12 +138,44 @@ void extrairTokens(char* linha, Lin** linhaTokens) {
             token[1] = '\0';
             adicionarToken(linhaTokens, token);
             inicio = fim + 1;
+        /*} else if (linha[fim] == '"') {
+            strncpy(token, &linha[inicio], fim - inicio);
+            token[fim - inicio] = '\0';
+            adicionarToken(linhaTokens, token);
+            token[0] = '"';
+            token[1] = '\0';
+            adicionarToken(linhaTokens, token);
+            inicio = fim + 1;*/
+        } else if (linha[fim] == '.') {
+            strncpy(token, &linha[inicio], fim - inicio);
+            token[fim - inicio] = '\0';
+            adicionarToken(linhaTokens, token);
+            token[0] = '.';
+            token[1] = '\0';
+            adicionarToken(linhaTokens, token);
+            inicio = fim + 1;
+        } else if (linha[fim] == ':') {
+            strncpy(token, &linha[inicio], fim - inicio);
+            token[fim - inicio] = '\0';
+            adicionarToken(linhaTokens, token);
+            token[0] = ':';
+            token[1] = '\0';
+            adicionarToken(linhaTokens, token);
+            inicio = fim + 1;
         }
         fim++;
     }
 }
 
-void lerArquivoPython(Prog** p, char* caminhoArquivo) {
+void adicionarFuncao(Funcoes **funcoes, char *nomeFuncao, Prog *enderecoFuncao) {
+    Funcoes *nova = (Funcoes*) malloc(sizeof(Funcoes));
+    strcpy(nova->nome, nomeFuncao);
+    nova->endereco = enderecoFuncao;
+    nova->prox = *funcoes;
+    *funcoes = nova;
+}
+
+void lerArquivoPython(Prog** p, char* caminhoArquivo, Funcoes** funcoes) {
     FILE* arquivo = fopen(caminhoArquivo, "r");
     if (arquivo == NULL) {
         printf("Erro ao abrir o arquivo.\n");
@@ -154,6 +192,10 @@ void lerArquivoPython(Prog** p, char* caminhoArquivo) {
         adicionarLinhaPrograma(&programaAtual, nova);
         if (programa == NULL) {
             programa = programaAtual;
+        }
+
+        if (nova != NULL && strcmp(nova->token, "def") == 0 && nova->prox != NULL) {
+            adicionarFuncao(funcoes, nova->prox->token, programaAtual);
         }
     }
 
@@ -235,8 +277,9 @@ int ehChamadaDeFuncao(Lin *linha, char nomeFuncao[50]) {
 int main(void) {
     Prog *p = NULL, *linhaExec, *funcaoInicio;
     PilhaP *pilhaExec;
-    char tecla, nomeFuncao[50];
-    char caminhoArquivo[50];
+    Funcoes *funcoes = NULL; 
+    char tecla;
+    char caminhoArquivo[50], nomeFuncao[50];
     
     initPP(&pilhaExec);  // Inicializa a pilha de execução
     
@@ -246,7 +289,7 @@ int main(void) {
             
             if (tecla == 65) { // F7 - Abrir arquivo
                 strcpy(caminhoArquivo, "C://Users//Daniel dos Santos//Documents//GitHub//Trabalho-ED2---Interpretador-Python//main.py");
-                lerArquivoPython(&p, caminhoArquivo);
+                lerArquivoPython(&p, caminhoArquivo, &funcoes); 
                 linhaExec = encontrarPrimeiraLinhaExecutavel(p);
                 imprimirPrograma(p, linhaExec);
             }
