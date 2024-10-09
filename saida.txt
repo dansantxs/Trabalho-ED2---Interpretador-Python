@@ -7,3 +7,7 @@ Apos adicionar 7 :
 Apos remover 2 :  
 Lista ordenada :  
 Apos remover o ultimo elemento :  
+Contagem usando while :  
+
+Percorrendo a lista usando for :  
+

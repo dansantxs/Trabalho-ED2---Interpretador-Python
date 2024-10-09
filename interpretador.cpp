@@ -267,7 +267,7 @@ Prog* encontrarPrimeiraLinhaExecutavel(Prog* programa) {
     return NULL;
 }
 
-8Prog* encontrarFuncao(Funcoes *funcoes, char* nomeFuncao) {
+Prog* encontrarFuncao(Funcoes *funcoes, char* nomeFuncao) {
     Funcoes *atual = funcoes;
     
     while (atual != NULL) {
@@ -297,21 +297,18 @@ Prog* ehChamadaDeFuncao(Lin *linha, Funcoes *funcoes) {
 
 void armazenarConteudoPrint(Lin *linha) {
     FILE *arquivoSaida = fopen("saida.txt", "a");
-    if (!arquivoSaida) {
+    if (arquivoSaida == NULL) {
         printf("Erro ao abrir arquivo de saída.\n");
         return;
     }
-    
-    printf("oi");
 
     int dentroAspas = 0;
-    while (linha != NULL) {
-    	//printf("%s", linha->token); Sleep(2500);
+    while (linha != NULL) {    	
         if (strcmp(linha->token, "\"") == 0) {
             dentroAspas = !dentroAspas; 
         } else if (dentroAspas == 1) {
             fprintf(arquivoSaida, "%s ", linha->token);
-        }
+        } 
         linha = linha->prox;
     }
     fprintf(arquivoSaida, "\n");
@@ -323,10 +320,27 @@ void ehPrint(Lin *linha){
 		armazenarConteudoPrint(linha->prox);
 }
 
+void exibirConteudoPrint() {
+    system("cls"); 
+    FILE *arquivoSaida = fopen("saida.txt", "r");
+    if (arquivoSaida  == NULL) {
+        printf("Erro ao abrir o arquivo de saída.\n");
+        return;
+    }
+
+    char linha[256];
+    while (fgets(linha, sizeof(linha), arquivoSaida)) {
+        printf("%s", linha);
+    }
+
+    fclose(arquivoSaida);
+
+    printf("\nPressione qualquer tecla para continuar...");
+    getch();
+}
+
 int main(void) {
-	FILE *arquivoSaida = fopen("saida.txt", "w");
-	remove(arquivoSaida);
-	fclose(arquivoSaida);
+	remove("saida.txt");
 	
     Prog *p = NULL, *linhaExec, *funcaoInicio, *enderecoFuncao;
     PilhaP *pilhaExec;
@@ -362,6 +376,8 @@ int main(void) {
 							        if (kbhit()) {
 							            tecla = getch();
 							            if (tecla == 13) { // ENTER
+							            	ehPrint(linhaExec->linha);
+							            
 							                linhaExec = linhaExec->prox;
 							                imprimirPrograma(p, linhaExec);
 							            }
@@ -376,6 +392,11 @@ int main(void) {
                             linhaExec = linhaExec->prox;
                             imprimirPrograma(p, linhaExec);
                         }
+                        
+                        if (tecla == 68) { // F10 - Exibir print dos resultados
+							exibirConteudoPrint();
+							imprimirPrograma(p, linhaExec);
+			            }
                     }
                 }
             }
