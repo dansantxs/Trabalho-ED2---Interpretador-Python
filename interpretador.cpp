@@ -451,6 +451,29 @@ void excluirVariaveisLocais(Variavel **variaveis) {
     }
 }
 
+void adicionarParametros(Lin *linhaChamada, Prog *enderecoFuncao, Variavel **variaveisLocais) {   
+    Lin *parametrosFuncao = enderecoFuncao->linha->prox->prox->prox;
+    Lin *argumentosChamada = linhaChamada->prox->prox;
+    
+    while (argumentosChamada != NULL && strcmp(argumentosChamada->token, "(") != 0) 	    
+	    argumentosChamada = argumentosChamada->prox;
+	
+	if (strcmp(argumentosChamada->token, "(") == 0)
+		argumentosChamada = argumentosChamada->prox;
+    
+    while (parametrosFuncao != NULL && strcmp(parametrosFuncao->token, ")") != 0) {
+        if (strcmp(parametrosFuncao->token, ",") != 0) {
+            char *valor = buscarVariavel(*variaveisLocais, argumentosChamada->token);
+            if (valor == NULL) {
+                valor = argumentosChamada->token;
+            }
+            adicionarVariavel(variaveisLocais, parametrosFuncao->token, valor, 2);
+        }
+        parametrosFuncao = parametrosFuncao->prox;
+        argumentosChamada = argumentosChamada->prox;
+    }
+}
+
 int main(void) {
 	remove("saida.txt");
 	
@@ -485,6 +508,7 @@ int main(void) {
                         	enderecoFuncao = ehChamadaDeFuncao(linhaExec->linha, funcoes);
 							if (enderecoFuncao != NULL) {
 							    pushP(&pilhaExec, linhaExec);
+							    adicionarParametros(linhaExec->linha, enderecoFuncao, &variaveis);
 							    linhaExec = enderecoFuncao;
 							    exibirPrograma(p, linhaExec);
 							
