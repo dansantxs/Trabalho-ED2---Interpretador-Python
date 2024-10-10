@@ -19,7 +19,9 @@ fim-def
 
 print("Bem-vindo ao programa de exemplo em Python!")
 
-resultado = expressao(4, 7)
+numeroA = 4
+numeroB = numeroA
+resultado = expressao(numero, 7)
 if resultado > 10:
     print("O resultado e maior que 10.")
 elif resultado == 10:

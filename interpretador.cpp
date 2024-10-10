@@ -22,6 +22,13 @@ struct pFuncoes {
     struct pFuncoes *prox;
 }; typedef struct pFuncoes Funcoes;
 
+struct pVariavel {
+    char nome[50];
+    char valor[50];
+    int status; //1 = variável global - 2 = variável local
+    struct pVariavel *prox;
+}; typedef struct pVariavel Variavel;
+
 struct pilhaProg {
     Prog *info;
     struct pilhaProg *prox;
@@ -224,7 +231,7 @@ void lerArquivoPython(Prog** p, char* caminhoArquivo, Funcoes** funcoes) {
     *p = programa;
 }
 
-void imprimirPrograma(Prog* programa, Prog* linhaExec) {
+void exibirPrograma(Prog* programa, Prog* linhaExec) {
     system("cls");
     Prog* progAtual = programa;
     while (progAtual != NULL) {
@@ -339,63 +346,173 @@ void exibirConteudoPrint() {
     getch();
 }
 
+void exibirVariaveis(Variavel *variaveis) {
+    system("cls");
+    
+    if (variaveis == NULL) {
+        printf("Nenhuma variavel declarada.\n");
+    } else {
+    	while (variaveis != NULL) {
+	        printf("%s = %s\n", variaveis->nome, variaveis->valor);
+        	variaveis = variaveis->prox;
+	    }
+    }
+    
+    printf("\nPressione qualquer tecla para continuar...");
+    getch();
+}
+
+void adicionarVariavel(Variavel **variaveis, char *nome, char *valor, int status) {
+    Variavel *nova = (Variavel*) malloc(sizeof(Variavel));
+    strcpy(nova->nome, nome);
+    strcpy(nova->valor, valor);
+    nova->status = status;
+    nova->prox = NULL;
+
+    if (*variaveis == NULL) {
+        *variaveis = nova;
+    } else {
+        Variavel *aux = *variaveis;
+        while (aux->prox != NULL) {
+            aux = aux->prox;
+        }
+        aux->prox = nova;
+    }
+}
+
+char* buscarVariavel(Variavel *variaveis, char *nome) {
+    Variavel *aux = variaveis;
+        
+    while (aux != NULL) {  
+        if (strcmp(aux->nome, nome) == 0) {
+            return aux->valor;
+        }
+        aux = aux->prox;
+    }
+
+    return NULL;
+}
+
+void ehVariavel(Lin *linha, Variavel **variaveis, int status) {
+    Lin *aux;
+    char *valor;
+    
+    while (linha != NULL) {
+        if (linha->prox != NULL && strcmp(linha->prox->token, "=") == 0) {
+            aux = linha;  
+            linha = linha->prox->prox;
+            
+            valor = buscarVariavel(*variaveis, linha->token);
+            if (valor == NULL) {
+                valor = linha->token;
+            }
+
+            adicionarVariavel(&(*variaveis), aux->token, valor, status);
+        }
+        
+        linha = linha->prox;
+    }
+}
+
+void excluirVariaveisLocais(Variavel **variaveis) {
+    Variavel *atual = *variaveis, *ant = NULL, *aux;
+    
+    while (atual != NULL) {
+        if (atual->status == 2) {
+            if (ant == NULL) {
+                *variaveis = atual->prox;
+            } else {
+                ant->prox = atual->prox;
+            }
+            Variavel *aux = atual;
+            atual = atual->prox;
+            free(aux);
+        } else {
+            ant = atual;
+            atual = atual->prox;
+        }
+    }
+}
+
 int main(void) {
 	remove("saida.txt");
 	
-    Prog *p = NULL, *linhaExec, *funcaoInicio, *enderecoFuncao;
-    PilhaP *pilhaExec;
-    Funcoes *funcoes = NULL; 
     char tecla;
     char caminhoArquivo[50], nomeFuncao[50];
     
+    PilhaP *pilhaExec;
     initPP(&pilhaExec);
+    
+    Prog *p = NULL, *linhaExec, *enderecoFuncao;
+    Funcoes *funcoes; 
+    Variavel *variaveis; 
     
     while (1) {
         if (kbhit()) {
             tecla = getch();
-            
+			            
             if (tecla == 65) { // F7 - Abrir arquivo
                 strcpy(caminhoArquivo, "C://Users//Aluno//Documents//GitHub//Trabalho-ED2---Interpretador-Python//main.py");
                 lerArquivoPython(&p, caminhoArquivo, &funcoes); 
                 linhaExec = encontrarPrimeiraLinhaExecutavel(p);
-                imprimirPrograma(p, linhaExec);
+                exibirPrograma(p, linhaExec);
             }
             
             if (tecla == 66) { // F8 - Executar passo a passo
+            	variaveis = NULL;
+            	
                 while (linhaExec != NULL && tecla != 27) { // ESC
                     if (kbhit()) {
                         tecla = getch();
-                        if (tecla == 13) { // ENTER
+                        if (tecla == 13) { // ENTER								
                         	enderecoFuncao = ehChamadaDeFuncao(linhaExec->linha, funcoes);
 							if (enderecoFuncao != NULL) {
 							    pushP(&pilhaExec, linhaExec);
 							    linhaExec = enderecoFuncao;
-							    imprimirPrograma(p, linhaExec);
+							    exibirPrograma(p, linhaExec);
 							
 							    while (linhaExec != NULL && strcmp(linhaExec->linha->token, "fim-def") != 0) {
 							        if (kbhit()) {
 							            tecla = getch();
 							            if (tecla == 13) { // ENTER
+											ehVariavel(linhaExec->linha, &variaveis, 2);
 							            	ehPrint(linhaExec->linha);
 							            
 							                linhaExec = linhaExec->prox;
-							                imprimirPrograma(p, linhaExec);
+							                exibirPrograma(p, linhaExec);
+							            }
+                        
+				                        if (tecla == 67) { // F9 - Exibir variáveis e seus valores
+											exibirVariaveis(variaveis);
+											exibirPrograma(p, linhaExec);
+							            }
+				                        
+				                        if (tecla == 68) { // F10 - Exibir print dos resultados
+											exibirConteudoPrint();
+											exibirPrograma(p, linhaExec);
 							            }
 							        }
 							    }
-							
+								
+								excluirVariaveisLocais(&variaveis);
 							    popP(&pilhaExec, &linhaExec); 
-							}
+							}							
 							
+							ehVariavel(linhaExec->linha, &variaveis, 1);
 							ehPrint(linhaExec->linha);							
                             
                             linhaExec = linhaExec->prox;
-                            imprimirPrograma(p, linhaExec);
+                            exibirPrograma(p, linhaExec);
                         }
+                        
+                        if (tecla == 67) { // F9 - Exibir variáveis e seus valores
+							exibirVariaveis(variaveis);
+							exibirPrograma(p, linhaExec);
+			            }
                         
                         if (tecla == 68) { // F10 - Exibir print dos resultados
 							exibirConteudoPrint();
-							imprimirPrograma(p, linhaExec);
+							exibirPrograma(p, linhaExec);
 			            }
                     }
                 }

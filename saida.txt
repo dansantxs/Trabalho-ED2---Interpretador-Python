@@ -1,13 +1,1 @@
 Bem-vindo ao programa de exemplo em Python !  
-O resultado e maior que 10 .  
-O resultado e exatamente 10 .  
-O resultado e menor que 10 .  
-Lista original :  
-Apos adicionar 7 :  
-Apos remover 2 :  
-Lista ordenada :  
-Apos remover o ultimo elemento :  
-Contagem usando while :  
-
-Percorrendo a lista usando for :  
-
