@@ -380,6 +380,18 @@ void adicionarVariavel(Variavel **variaveis, char *nome, char *valor, int status
     }
 }
 
+void alterarVariavel(Variavel **variaveis, char *nome, char *valor) {
+    Variavel *aux = *variaveis;
+    
+    while (aux != NULL && strcmp(aux->nome, nome) != 0) {
+        aux = aux->prox;
+    }
+    
+    if (aux != NULL) {
+        strcpy(aux->valor, valor);
+    }
+}
+
 char* buscarVariavel(Variavel *variaveis, char *nome) {
     Variavel *aux = variaveis;
         
@@ -395,7 +407,7 @@ char* buscarVariavel(Variavel *variaveis, char *nome) {
 
 void ehVariavel(Lin *linha, Variavel **variaveis, int status) {
     Lin *aux;
-    char *valor;
+    char *valor, *atual;
     
     while (linha != NULL) {
         if (linha->prox != NULL && strcmp(linha->prox->token, "=") == 0) {
@@ -406,8 +418,13 @@ void ehVariavel(Lin *linha, Variavel **variaveis, int status) {
             if (valor == NULL) {
                 valor = linha->token;
             }
-
-            adicionarVariavel(&(*variaveis), aux->token, valor, status);
+			
+			atual = buscarVariavel(*variaveis, aux->token);
+			if (atual == NULL) {
+                adicionarVariavel(&(*variaveis), aux->token, valor, status);
+            } else {
+                alterarVariavel(&(*variaveis), aux->token, valor);
+			}
         }
         
         linha = linha->prox;
@@ -452,7 +469,7 @@ int main(void) {
             tecla = getch();
 			            
             if (tecla == 65) { // F7 - Abrir arquivo
-                strcpy(caminhoArquivo, "C://Users//Aluno//Documents//GitHub//Trabalho-ED2---Interpretador-Python//main.py");
+                strcpy(caminhoArquivo, "C://Users//Daniel dos Santos//Documents//GitHub//Trabalho-ED2---Interpretador-Python//main.py");
                 lerArquivoPython(&p, caminhoArquivo, &funcoes); 
                 linhaExec = encontrarPrimeiraLinhaExecutavel(p);
                 exibirPrograma(p, linhaExec);

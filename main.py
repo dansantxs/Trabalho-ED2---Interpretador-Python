@@ -21,6 +21,7 @@ print("Bem-vindo ao programa de exemplo em Python!")
 
 numeroA = 4
 numeroB = numeroA
+numeroA = 8
 resultado = expressao(numero, 7)
 if resultado > 10:
     print("O resultado e maior que 10.")
